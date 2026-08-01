@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plat / Treatable Acreage Estimator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#eee7d6;
+    --ink-dim:#a8a290;
+    --bg:#12160f;
+    --bg-panel:#171c13;
+    --bg-raised:#1e2418;
+    --line:#3a4230;
+    --line-bright:#5a6448;
+    --lime:#a8d94f;
+    --lime-dim:#7a9a3a;
+    --clay:#c9793f;
+    --clay-dim:#8f5228;
+    --water:#5fa8c9;
+    --danger:#d9695f;
+    --radius:2px;
+    --mono:'IBM Plex Mono', monospace;
+    --display:'Space Grotesk', sans-serif;
+    --body:'Inter', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:32px 32px;
+    background-attachment:local;
+    color:var(--ink);
+    font-family:var(--body);
+    min-height:100vh;
+    padding:20px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  /* ---- Title block ---- */
+  .titleblock{
+    border:1px solid var(--line-bright);
+    background:rgba(23,28,19,0.92);
+    padding:18px 22px;
+    margin-bottom:18px;
+    position:relative;
+  }
+  .tick{position:absolute;width:10px;height:10px;border:1px solid var(--lime);}
+  .tick.tl{top:-1px;left:-1px;border-right:none;border-bottom:none;}
+  .tick.tr{top:-1px;right:-1px;border-left:none;border-bottom:none;}
+  .tick.bl{bottom:-1px;left:-1px;border-right:none;border-top:none;}
+  .tick.br{bottom:-1px;right:-1px;border-left:none;border-top:none;}
+  .titleblock-row{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;}
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.14em;
+    color:var(--lime);
+    text-transform:uppercase;
+    margin:0 0 6px 0;
+  }
+  h1{
+    font-family:var(--display);
+    font-weight:600;
+    font-size:26px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .titleblock-meta{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-dim);
+    text-align:right;
+    line-height:1.6;
+  }
+  .titleblock-meta span{color:var(--lime);}
+
+  /* ---- Layout ---- */
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start;}
+  @media (max-width:860px){.grid{grid-template-columns:1fr;}}
+
+  .panel{
+    border:1px solid var(--line);
+    background:var(--bg-panel);
+    padding:20px;
+  }
+  .panel h2{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    margin:0 0 16px 0;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--line);
+  }
+
+  label{
+    display:block;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-dim);
+    letter-spacing:0.04em;
+    margin-bottom:6px;
+    text-transform:uppercase;
+  }
+  input[type=text], input[type=number]{
+    width:100%;
+    background:var(--bg-raised);
+    border:1px solid var(--line-bright);
+    color:var(--ink);
+    font-family:var(--body);
+    font-size:14px;
+    padding:10px 11px;
+    border-radius:var(--radius);
+    margin-bottom:14px;
+  }
+  input[type=text]:focus, input[type=number]:focus{
+    outline:none;
+    border-color:var(--lime);
+  }
+  .field-row{display:flex;gap:10px;}
+  .field-row > div{flex:1;}
+
+  button{
+    font-family:var(--display);
+    font-weight:600;
+    font-size:14px;
+    letter-spacing:0.01em;
+    background:var(--lime);
+    color:#111;
+    border:none;
+    padding:12px 18px;
+    width:100%;
+    cursor:pointer;
+    border-radius:var(--radius);
+    transition:background 0.15s ease;
+  }
+  button:hover{background:#bde86b;}
+  button:disabled{background:var(--line-bright);color:var(--ink-dim);cursor:not-allowed;}
+  button.secondary{
+    background:transparent;
+    border:1px solid var(--line-bright);
+    color:var(--ink);
+    margin-top:8px;
+  }
+  button.secondary:hover{border-color:var(--lime);color:var(--lime);background:transparent;}
+
+  .hint{font-size:12px;color:var(--ink-dim);line-height:1.5;margin-top:-6px;margin-bottom:14px;}
+
+  .toggle-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:9px 0;
+    border-bottom:1px solid var(--line);
+    font-size:13px;
+  }
+  .toggle-row:last-child{border-bottom:none;}
+  .toggle-row .tcount{font-family:var(--mono);font-size:11px;color:var(--ink-dim);}
+  .switch{
+    position:relative;width:36px;height:20px;flex-shrink:0;
+  }
+  .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;}
+  .switch .track{
+    position:absolute;inset:0;background:var(--line-bright);border-radius:20px;transition:background 0.15s;
+  }
+  .switch .thumb{
+    position:absolute;top:2px;left:2px;width:16px;height:16px;background:var(--ink);border-radius:50%;transition:left 0.15s;
+  }
+  .switch input:checked ~ .track{background:var(--lime-dim);}
+  .switch input:checked ~ .thumb{left:18px;background:var(--lime);}
+
+  /* ---- Status / errors ---- */
+  .status{
+    font-family:var(--mono);
+    font-size:12px;
+    padding:10px 12px;
+    border-left:2px solid var(--lime);
+    background:var(--bg-raised);
+    margin-bottom:14px;
+    line-height:1.5;
+  }
+  .status.err{border-left-color:var(--danger);color:#f0c4bf;}
+  .status.warn{border-left-color:var(--clay);color:#f0d8bf;}
+
+  /* ---- Results ---- */
+  .result-empty{
+    color:var(--ink-dim);
+    font-family:var(--mono);
+    font-size:13px;
+    padding:60px 20px;
+    text-align:center;
+    line-height:1.7;
+  }
+  .headline{
+    display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;
+    margin-bottom:18px;
+    padding-bottom:18px;
+    border-bottom:1px dashed var(--line-bright);
+  }
+  .addr-line{font-family:var(--display);font-size:16px;font-weight:600;}
+  .apn-line{font-family:var(--mono);font-size:11px;color:var(--ink-dim);margin-top:4px;}
+  .unit-toggle{display:flex;border:1px solid var(--line-bright);border-radius:var(--radius);overflow:hidden;}
+  .unit-toggle button{
+    width:auto;background:transparent;color:var(--ink-dim);font-size:11px;
+    padding:6px 12px;border-radius:0;font-family:var(--mono);font-weight:500;letter-spacing:0.06em;
+  }
+  .unit-toggle button.active{background:var(--lime);color:#111;}
+  .unit-toggle button:hover{background:var(--bg-raised);color:var(--ink);}
+  .unit-toggle button.active:hover{background:#bde86b;color:#111;}
+
+  .main-figure{
+    text-align:center;
+    padding:22px 10px 26px 10px;
+  }
+  .main-figure .num{
+    font-family:var(--display);
+    font-weight:700;
+    font-size:56px;
+    color:var(--lime);
+    letter-spacing:-0.02em;
+    line-height:1;
+  }
+  .main-figure .lbl{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    margin-top:8px;
+  }
+
+  .diagram-wrap{
+    border:1px solid var(--line);
+    background:#0e120a;
+    margin-bottom:20px;
+    position:relative;
+  }
+  .diagram-wrap svg{display:block;width:100%;height:auto;}
+  .legend{
+    display:flex;gap:18px;flex-wrap:wrap;
+    padding:10px 14px;
+    border-top:1px solid var(--line);
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-dim);
+  }
+  .legend .sw{display:inline-block;width:10px;height:10px;margin-right:6px;vertical-align:-1px;border-radius:1px;}
+
+  table.breakdown{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px;}
+  table.breakdown td{padding:9px 4px;border-bottom:1px solid var(--line);}
+  table.breakdown tr:last-child td{border-bottom:none;}
+  table.breakdown td.label{color:var(--ink-dim);}
+  table.breakdown td.val{text-align:right;white-space:nowrap;}
+  table.breakdown tr.total td{border-top:1px solid var(--line-bright);padding-top:12px;color:var(--lime);font-weight:600;}
+  table.breakdown td.neg{color:var(--clay);}
+
+  details{margin-top:16px;}
+  details summary{
+    cursor:pointer;font-family:var(--mono);font-size:11px;color:var(--ink-dim);
+    letter-spacing:0.06em;text-transform:uppercase;padding:6px 0;
+  }
+  details summary:hover{color:var(--lime);}
+  .rawdata{
+    font-family:var(--mono);font-size:11px;color:var(--ink-dim);
+    background:var(--bg-raised);padding:12px;margin-top:8px;
+    max-height:220px;overflow:auto;white-space:pre-wrap;word-break:break-all;
+  }
+
+  .manual-block{
+    border:1px dashed var(--line-bright);
+    padding:16px;
+    margin-top:6px;
+  }
+  .manual-block .hint{margin-top:0;}
+
+  footer{
+    margin-top:22px;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-dim);
+    line-height:1.7;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+  }
+  a{color:var(--lime);}
+
+  .spinner{
+    display:inline-block;width:12px;height:12px;border:2px solid var(--line-bright);
+    border-top-color:var(--lime);border-radius:50%;animation:spin 0.7s linear infinite;margin-right:8px;vertical-align:-2px;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="titleblock">
+    <span class="tick tl"></span><span class="tick tr"></span><span class="tick bl"></span><span class="tick br"></span>
+    <div class="titleblock-row">
+      <div>
+        <p class="eyebrow">Applicator field tool</p>
+        <h1>Treatable Acreage Estimator</h1>
+      </div>
+      <div class="titleblock-meta">
+        PARCEL SRC: MARICOPA CO. ASSESSOR<br>
+        STRUCTURES: OPENSTREETMAP<br>
+        STATUS: <span id="svcstatus">READY</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- INPUT PANEL -->
+    <div class="panel">
+      <h2>01 — Site Address</h2>
+      <label for="addr">Street address</label>
+      <input type="text" id="addr" placeholder="e.g. 1234 E Main St, Mesa, AZ 85201">
+      <div class="hint">Full address with city and state gives the most reliable parcel match.</div>
+      <button id="lookupBtn" onclick="runLookup()">Find parcel &amp; calculate</button>
+      <button class="secondary" onclick="showManual()">Enter lot size manually instead</button>
+
+      <div id="status-area" style="margin-top:14px;"></div>
+
+      <div id="manualFields" style="display:none;margin-top:10px;">
+        <div class="manual-block">
+          <label for="manualLot">Total lot size</label>
+          <div class="field-row">
+            <div><input type="number" id="manualLot" placeholder="e.g. 8500" min="0" oninput="onManualChange()"></div>
+            <div>
+              <select id="manualLotUnit" onchange="onManualChange()" style="width:100%;background:var(--bg-raised);border:1px solid var(--line-bright);color:var(--ink);padding:10px;border-radius:2px;font-family:var(--body);margin-bottom:14px;">
+                <option value="sqft">sq ft</option>
+                <option value="acres">acres</option>
+              </select>
+            </div>
+          </div>
+          <label for="manualBldgSqft">Building footprint area (sq ft)</label>
+          <input type="number" id="manualBldgSqft" placeholder="e.g. 1800" min="0" value="0" oninput="onManualChange()">
+          <div class="hint">Find lot size on the county assessor site, a recent survey, or by measuring. Include the full footprint of the house, garage, and any other structures.</div>
+        </div>
+      </div>
+
+      <div id="deductions" style="display:none;">
+        <h2 style="margin-top:22px;">02 — Exclusions</h2>
+        <div class="toggle-row">
+          <div>Building footprints<br><span class="tcount" id="bldgCount">0 structures</span></div>
+          <label class="switch"><input type="checkbox" id="tglBldg" checked disabled><span class="track"></span><span class="thumb"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div>Pools &amp; water features<br><span class="tcount" id="poolCount">0 features</span></div>
+          <label class="switch"><input type="checkbox" id="tglPool" checked onchange="recompute()"><span class="track"></span><span class="thumb"></span></label>
+        </div>
+        <div style="margin-top:14px;">
+          <label for="extraSqft">Additional exclusions — sheds, detached structures, decking not captured above (sq ft)</label>
+          <input type="number" id="extraSqft" value="0" min="0" oninput="recompute()">
+          <label for="extraPct">Hardscape buffer — driveways, walkways, gravel beds, etc. (% of lot)</label>
+          <input type="number" id="extraPct" value="0" min="0" max="100" step="0.5" oninput="recompute()">
+          <div class="hint">OpenStreetMap building data is community-maintained and may miss recent construction, sheds, or unmapped hardscape. Use these fields to true up the estimate against what you see on-site.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS PANEL -->
+    <div class="panel" id="resultsPanel">
+      <h2>Plat &amp; Estimate</h2>
+      <div class="result-empty" id="emptyState">
+        Enter an address to pull the parcel boundary and calculate<br>treatable area, minus buildings and other exclusions.
+      </div>
+      <div id="resultsBody" style="display:none;"></div>
+    </div>
+
+  </div>
+
+  <footer>
+    DATA SOURCES — Geocoding: U.S. Census Bureau Geocoder. Parcel boundaries: Maricopa County Assessor's Office public GIS (auto-lookup currently covers Maricopa County only). Structure footprints: OpenStreetMap contributors, via Overpass API.<br>
+    METHOD — Treatable area = parcel boundary area, minus the portion of any building/pool footprint that falls inside the parcel, minus manual exclusions entered above. Areas are computed directly from boundary coordinates, not from assessor-recorded acreage fields, so minor discrepancies vs. the tax record are expected. This is an estimating aid, not a survey — verify unusual or high-value lots on-site.<br>
+    Outside Maricopa County, parcel auto-lookup isn't available yet — use manual entry with a measured or GIS-sourced lot size.
+  </footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let state = {
+  parcelRingLL: null,      // [[lon,lat], ...] original parcel ring
+  parcelLocal: null,       // [[x,y] meters] relative to centroid
+  centroid: null,          // {lon,lat}
+  buildings: [],           // [{local:[[x,y]...], areaSqm}]
+  pools: [],
+  matchedAddress: '',
+  apn: '',
+  rawAttrs: null,
+  parcelAreaSqm: 0,
+  manualMode: false,
+  units: 'acres'
+};
+
+function setStatus(msg, kind){
+  const el = $('status-area');
+  if(!msg){ el.innerHTML=''; return; }
+  el.innerHTML = `<div class="status ${kind||''}">${msg}</div>`;
+}
+function setSvc(text){ $('svcstatus').textContent = text; }
+
+// ---------- geometry helpers ----------
+function metersPerDegree(lat){
+  const latRad = lat*Math.PI/180;
+  return { mx: 111320*Math.cos(latRad), my: 110540 };
+}
+function toLocal(lon, lat, centroid, mpd){
+  return [ (lon-centroid.lon)*mpd.mx, (lat-centroid.lat)*mpd.my ];
+}
+function ringCentroid(ring){ // simple average, fine for small parcels
+  let sx=0, sy=0;
+  ring.forEach(p=>{ sx+=p[0]; sy+=p[1]; });
+  return { lon: sx/ring.length, lat: sy/ring.length };
+}
+function shoelaceArea(poly){ // poly = [[x,y],...] meters, returns signed area
+  let a=0;
+  for(let i=0;i<poly.length;i++){
+    const [x1,y1]=poly[i], [x2,y2]=poly[(i+1)%poly.length];
+    a += (x1*y2 - x2*y1);
+  }
+  return a/2;
+}
+function polyArea(poly){ return Math.abs(shoelaceArea(poly)); }
+
+// Sutherland-Hodgman polygon clip: subject clipped by convex clipPoly
+function clipPolygon(subject, clipPoly){
+  // ensure clipPoly wound counter-clockwise for consistent inside test
+  let clip = clipPoly.slice();
+  if(shoelaceArea(clip) < 0) clip = clip.slice().reverse();
+  let output = subject.slice();
+  for(let i=0;i<clip.length;i++){
+    if(output.length===0) break;
+    const A = clip[i], B = clip[(i+1)%clip.length];
+    const input = output;
+    output = [];
+    const inside = p => ((B[0]-A[0])*(p[1]-A[1]) - (B[1]-A[1])*(p[0]-A[0])) >= 0;
+    const intersect = (p1,p2) => {
+      const A1=B[1]-A[1], B1=A[0]-B[0], C1=A1*A[0]+B1*A[1];
+      const A2=p2[1]-p1[1], B2=p1[0]-p2[0], C2=A2*p1[0]+B2*p1[1];
+      const det = A1*B2-A2*B1;
+      if(Math.abs(det) < 1e-9) return p2;
+      return [ (B2*C1-B1*C2)/det, (A1*C2-A2*C1)/det ];
+    };
+    for(let j=0;j<input.length;j++){
+      const cur = input[j], prev = input[(j-1+input.length)%input.length];
+      const curIn = inside(cur), prevIn = inside(prev);
+      if(curIn){
+        if(!prevIn) output.push(intersect(prev,cur));
+        output.push(cur);
+      } else if(prevIn){
+        output.push(intersect(prev,cur));
+      }
+    }
+  }
+  return output;
+}
+function bufferRingMeters(localRing, meters){
+  const c = { x:0, y:0 };
+  localRing.forEach(p=>{ c.x+=p[0]; c.y+=p[1]; });
+  c.x/=localRing.length; c.y/=localRing.length;
+  return localRing.map(([x,y])=>{
+    const dx=x-c.x, dy=y-c.y;
+    const len=Math.hypot(dx,dy)||1;
+    return [ x + (dx/len)*meters, y + (dy/len)*meters ];
+  });
+}
+
+// ---------- network calls ----------
+async function geocodeAddress(address){
+  const url = `https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encodeURIComponent(address)}&benchmark=Public_AR_Current&format=json`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('Geocoder request failed (HTTP '+res.status+').');
+  const data = await res.json();
+  const matches = data?.result?.addressMatches;
+  if(!matches || matches.length===0) throw new Error('No address match found. Check the spelling and include city/state.');
+  const m = matches[0];
+  return { lon: m.coordinates.x, lat: m.coordinates.y, matched: m.matchedAddress };
+}
+
+async function getCounty(lat, lon){
+  const url = `https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=${lon}&y=${lat}&benchmark=Public_AR_Current&vintage=Current_Current&layers=Counties&format=json`;
+  const res = await fetch(url);
+  if(!res.ok) return null;
+  const data = await res.json();
+  const counties = data?.result?.geographies?.Counties;
+  if(counties && counties.length>0) return counties[0].NAME || counties[0].BASENAME;
+  return null;
+}
+
+async function queryMaricopaParcel(lat, lon){
+  const url = `https://gis.mcassessor.maricopa.gov/arcgis/rest/services/Parcels/MapServer/0/query?f=json&geometry=${lon},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=true&outSR=4326`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('Parcel service request failed (HTTP '+res.status+').');
+  const data = await res.json();
+  if(data.error) throw new Error('Parcel service error: '+(data.error.message||'unknown'));
+  if(!data.features || data.features.length===0) throw new Error('No parcel polygon found at this location.');
+  const f = data.features[0];
+  const ring = f.geometry.rings[0]; // [[lon,lat],...]
+  return { ring, attrs: f.attributes };
+}
+
+async function queryOverpass(polyLatLonStr){
+  const query = `[out:json][timeout:25];(way["building"](poly:"${polyLatLonStr}");way["leisure"="swimming_pool"](poly:"${polyLatLonStr}");way["natural"="water"](poly:"${polyLatLonStr}"););out geom;`;
+  const mirrors = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter'
+  ];
+  let lastErr;
+  for(const base of mirrors){
+    try{
+      const res = await fetch(base, { method:'POST', body:'data='+encodeURIComponent(query) });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      return data.elements || [];
+    }catch(e){ lastErr = e; }
+  }
+  throw new Error('Structure lookup (OpenStreetMap) failed: '+(lastErr?.message||'unknown'));
+}
+
+function findAttr(attrs, needles){
+  const keys = Object.keys(attrs||{});
+  for(const n of needles){
+    const hit = keys.find(k=>k.toLowerCase().includes(n));
+    if(hit && attrs[hit] !== null && attrs[hit] !== '') return attrs[hit];
+  }
+  return null;
+}
+
+// ---------- main flow ----------
+async function runLookup(){
+  const address = $('addr').value.trim();
+  if(!address){ setStatus('Enter an address first.', 'err'); return; }
+  $('lookupBtn').disabled = true;
+  setStatus('<span class="spinner"></span>Geocoding address…');
+  setSvc('GEOCODING');
+  try{
+    const geo = await geocodeAddress(address);
+    setStatus('<span class="spinner"></span>Checking county…');
+    const county = await getCounty(geo.lat, geo.lon);
+
+    if(!county || !county.toLowerCase().includes('maricopa')){
+      setStatus(`Matched "${geo.matched}" in ${county||'an unrecognized county'}. Automatic parcel lookup currently only covers Maricopa County — switch to manual entry below and use a measured or county-GIS lot size.`, 'warn');
+      $('lookupBtn').disabled = false;
+      setSvc('OUT OF COVERAGE');
+      return;
+    }
+
+    setStatus('<span class="spinner"></span>Fetching parcel boundary (Maricopa County Assessor)…');
+    setSvc('PARCEL LOOKUP');
+    const parcel = await queryMaricopaParcel(geo.lat, geo.lon);
+
+    const centroid = ringCentroid(parcel.ring);
+    const mpd = metersPerDegree(centroid.lat);
+    const parcelLocal = parcel.ring.map(p => toLocal(p[0], p[1], centroid, mpd));
+    const parcelArea = polyArea(parcelLocal);
+
+    state.parcelRingLL = parcel.ring;
+    state.parcelLocal = parcelLocal;
+    state.centroid = centroid;
+    state.parcelAreaSqm = parcelArea;
+    state.matchedAddress = geo.matched;
+    state.apn = findAttr(parcel.attrs, ['apn','parcelnum','parcel_id']) || '—';
+    state.rawAttrs = parcel.attrs;
+    state.manualMode = false;
+
+    setStatus('<span class="spinner"></span>Fetching structure footprints (OpenStreetMap)…');
+    setSvc('STRUCTURE LOOKUP');
+    const bufferedLocal = bufferRingMeters(parcelLocal, 10);
+    const bufferedLL = bufferedLocal.map(([x,y])=>{
+      const lon = centroid.lon + x/mpd.mx;
+      const lat = centroid.lat + y/mpd.my;
+      return `${lat} ${lon}`;
+    }).join(' ');
+
+    let elements = [];
+    try{
+      elements = await queryOverpass(bufferedLL);
+    }catch(e){
+      setStatus('Parcel found, but structure lookup failed: '+e.message+'. You can still see the lot size, and add building area manually below.', 'warn');
+    }
+
+    state.buildings = [];
+    state.pools = [];
+    elements.forEach(el=>{
+      if(!el.geometry) return;
+      const local = el.geometry.map(pt => toLocal(pt.lon, pt.lat, centroid, mpd));
+      if(local.length < 3) return;
+      const isPool = (el.tags && (el.tags.leisure==='swimming_pool' || el.tags.natural==='water'));
+      const target = isPool ? state.pools : state.buildings;
+      target.push({ local });
+    });
+
+    $('deductions').style.display = 'block';
+    $('manualFields').style.display = 'none';
+    setStatus(`Matched "${geo.matched}". Parcel and ${state.buildings.length} building(s) / ${state.pools.length} pool or water feature(s) loaded.`, '');
+    setSvc('READY');
+    recompute();
+  }catch(e){
+    setStatus(e.message, 'err');
+    setSvc('ERROR');
+  }finally{
+    $('lookupBtn').disabled = false;
+  }
+}
+
+function computeClippedTotal(list, parcelLocal){
+  let total = 0;
+  const clippedShapes = [];
+  list.forEach(item=>{
+    const clipped = clipPolygon(item.local, parcelLocal);
+    if(clipped.length >= 3){
+      const a = polyArea(clipped);
+      total += a;
+      clippedShapes.push(clipped);
+    }
+  });
+  return { total, clippedShapes };
+}
+
+function recompute(){
+  if(!state.parcelLocal && !state.manualMode) return;
+  if(state.manualMode && !(state.manualLotSqft > 0)){ renderEmpty('Enter a lot size on the left to calculate treatable area.'); return; }
+
+  let parcelAreaSqm, bldgAreaSqm=0, poolAreaSqm=0, bldgCount=0, poolCount=0, bldgShapes=[], poolShapes=[];
+
+  if(state.manualMode){
+    parcelAreaSqm = state.manualLotSqft / 10.7639;
+    bldgAreaSqm = (parseFloat($('manualBldgSqft').value)||0) / 10.7639;
+    bldgCount = bldgAreaSqm>0 ? 1 : 0;
+  } else {
+    parcelAreaSqm = state.parcelAreaSqm;
+    const bRes = computeClippedTotal(state.buildings, state.parcelLocal);
+    bldgAreaSqm = bRes.total; bldgCount = bRes.clippedShapes.length; bldgShapes = bRes.clippedShapes;
+    if($('tglPool').checked){
+      const pRes = computeClippedTotal(state.pools, state.parcelLocal);
+      poolAreaSqm = pRes.total; poolCount = pRes.clippedShapes.length; poolShapes = pRes.clippedShapes;
+    }
+  }
+
+  const extraSqft = parseFloat($('extraSqft').value)||0;
+  const extraPct = parseFloat($('extraPct').value)||0;
+  const extraSqm = extraSqft/10.7639;
+  const bufferSqm = parcelAreaSqm * (extraPct/100);
+
+  const treatableSqm = Math.max(0, parcelAreaSqm - bldgAreaSqm - poolAreaSqm - extraSqm - bufferSqm);
+
+  $('bldgCount').textContent = bldgCount + (bldgCount===1?' structure':' structures');
+  $('poolCount').textContent = poolCount + (poolCount===1?' feature':' features');
+
+  renderResults({
+    parcelAreaSqm, bldgAreaSqm, poolAreaSqm, extraSqm, bufferSqm, treatableSqm,
+    bldgCount, poolCount, bldgShapes, poolShapes
+  });
+}
+
+// ---------- rendering ----------
+function sqmToAcres(sqm){ return sqm/4046.8564224; }
+function sqmToSqft(sqm){ return sqm*10.7639; }
+function fmt(n, d=2){ return Number(n).toLocaleString(undefined, {minimumFractionDigits:d, maximumFractionDigits:d}); }
+function fmt0(n){ return Number(n).toLocaleString(undefined, {maximumFractionDigits:0}); }
+
+function renderResults(r){
+  $('emptyState').style.display='none';
+  $('resultsBody').style.display='block';
+
+  const mainVal = state.units==='acres' ? fmt(sqmToAcres(r.treatableSqm),2)+' ac' : fmt0(sqmToSqft(r.treatableSqm))+' ft²';
+
+  const addrLine = state.manualMode ? 'Manual entry' : state.matchedAddress;
+  const apnLine = state.manualMode ? '' : `APN ${state.apn}`;
+
+  let diagramHtml = '';
+  if(!state.manualMode){
+    diagramHtml = buildDiagram(r);
+  }
+
+  $('resultsBody').innerHTML = `
+    <div class="headline">
+      <div>
+        <div class="addr-line">${addrLine}</div>
+        <div class="apn-line">${apnLine}</div>
+      </div>
+      <div class="unit-toggle">
+        <button class="${state.units==='acres'?'active':''}" onclick="setUnits('acres')">ACRES</button>
+        <button class="${state.units==='sqft'?'active':''}" onclick="setUnits('sqft')">SQ FT</button>
+      </div>
+    </div>
+
+    <div class="main-figure">
+      <div class="num">${mainVal}</div>
+      <div class="lbl">Estimated treatable area</div>
+    </div>
+
+    ${diagramHtml}
+
+    <table class="breakdown">
+      <tr><td class="label">Total lot area</td><td class="val">${state.units==='acres'?fmt(sqmToAcres(r.parcelAreaSqm),3)+' ac':fmt0(sqmToSqft(r.parcelAreaSqm))+' ft²'}</td></tr>
+      <tr><td class="label">− Buildings (${r.bldgCount})</td><td class="val neg">−${fmt0(sqmToSqft(r.bldgAreaSqm))} ft²</td></tr>
+      <tr><td class="label">− Pools / water (${r.poolCount})</td><td class="val neg">−${fmt0(sqmToSqft(r.poolAreaSqm))} ft²</td></tr>
+      <tr><td class="label">− Manual exclusions</td><td class="val neg">−${fmt0(sqmToSqft(r.extraSqm))} ft²</td></tr>
+      <tr><td class="label">− Hardscape buffer</td><td class="val neg">−${fmt0(sqmToSqft(r.bufferSqm))} ft²</td></tr>
+      <tr class="total"><td class="label">= Treatable area</td><td class="val">${state.units==='acres'?fmt(sqmToAcres(r.treatableSqm),3)+' ac':fmt0(sqmToSqft(r.treatableSqm))+' ft²'}</td></tr>
+    </table>
+
+    ${state.manualMode ? '' : `
+    <details>
+      <summary>Raw parcel attributes (Maricopa County Assessor)</summary>
+      <div class="rawdata">${JSON.stringify(state.rawAttrs, null, 2)}</div>
+    </details>`}
+  `;
+}
+function renderEmpty(msg){
+  $('resultsBody').style.display='none';
+  $('emptyState').style.display='block';
+  $('emptyState').innerHTML = msg || 'Enter an address to pull the parcel boundary and calculate<br>treatable area, minus buildings and other exclusions.';
+}
+
+function buildDiagram(r){
+  const allPts = state.parcelLocal;
+  const xs = allPts.map(p=>p[0]), ys = allPts.map(p=>p[1]);
+  const minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys);
+  const padF = 0.14;
+  const w = maxX-minX, h = maxY-minY;
+  const pad = Math.max(w,h)*padF || 5;
+  const vbW = (w+2*pad), vbH = (h+2*pad);
+  const viewBox = `${minX-pad} ${-(maxY+pad)} ${vbW} ${vbH}`;
+
+  const toPath = (poly) => 'M ' + poly.map(([x,y])=>`${x.toFixed(2)},${(-y).toFixed(2)}`).join(' L ') + ' Z';
+
+  let svg = `<svg viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet">`;
+  svg += `<defs>
+    <pattern id="hatch" width="4" height="4" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="0" y2="4" stroke="#a8d94f" stroke-width="0.7" opacity="0.35"/>
+    </pattern>
+  </defs>`;
+  // parcel fill + outline
+  svg += `<path d="${toPath(state.parcelLocal)}" fill="url(#hatch)" stroke="#a8d94f" stroke-width="${Math.max(vbW,vbH)*0.004}"/>`;
+  // buildings (full outline, clay)
+  state.buildings.forEach(b=>{
+    svg += `<path d="${toPath(b.local)}" fill="#c9793f" fill-opacity="0.85" stroke="#8f5228" stroke-width="${Math.max(vbW,vbH)*0.003}"/>`;
+  });
+  // pools
+  if($('tglPool').checked){
+    state.pools.forEach(p=>{
+      svg += `<path d="${toPath(p.local)}" fill="#5fa8c9" fill-opacity="0.85" stroke="#3a7591" stroke-width="${Math.max(vbW,vbH)*0.003}"/>`;
+    });
+  }
+  // north arrow
+  const nx = minX-pad*0.55, ny = -(maxY+pad*0.4);
+  svg += `<g transform="translate(${nx},${ny})" stroke="#eee7d6" stroke-width="${Math.max(vbW,vbH)*0.003}" fill="none">
+    <line x1="0" y1="0" x2="0" y2="${-vbH*0.05}"/>
+    <path d="M ${-vbW*0.008} ${-vbH*0.035} L 0 ${-vbH*0.05} L ${vbW*0.008} ${-vbH*0.035}"/>
+  </g>
+  <text x="${nx}" y="${ny+vbH*0.03}" fill="#a8a290" font-family="IBM Plex Mono" font-size="${vbH*0.028}" text-anchor="middle">N</text>`;
+
+  svg += `</svg>`;
+
+  return `<div class="diagram-wrap">${svg}
+    <div class="legend">
+      <span><span class="sw" style="background:#a8d94f;opacity:.5"></span>Treatable</span>
+      <span><span class="sw" style="background:#c9793f"></span>Building</span>
+      <span><span class="sw" style="background:#5fa8c9"></span>Pool / water</span>
+    </div>
+  </div>`;
+}
+
+function setUnits(u){ state.units = u; recompute(); }
+
+function showManual(){
+  state.manualMode = true;
+  state.manualLotSqft = 0;
+  $('deductions').style.display = 'block';
+  $('manualFields').style.display = 'block';
+  renderEmpty('Enter a lot size on the left to calculate treatable area.');
+  setStatus('Manual mode — enter the lot size and building area from a county record, survey, or on-site measurement.', '');
+}
+
+function onManualChange(){
+  const val = parseFloat($('manualLot').value)||0;
+  const unit = $('manualLotUnit').value;
+  state.manualLotSqft = unit==='acres' ? val*43560 : val;
+  if(state.manualLotSqft > 0){
+    recompute();
+  } else {
+    renderEmpty('Enter a lot size on the left to calculate treatable area.');
+  }
+}
+
+$('addr').addEventListener('keydown', e=>{ if(e.key==='Enter') runLookup(); });
+</script>
+</body>
+</html>
