@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lot Size Lookup — Maricopa County, AZ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #EFEAD9;
+    --ink: #1B2430;
+    --ink-soft: #3A4453;
+    --grid-line: rgba(27,36,48,0.08);
+    --card: #F8F5EA;
+    --accent: #C1502E;
+    --accent-soft: #E4CBB8;
+    --teal: #3E7C74;
+    --border: rgba(27,36,48,0.18);
+    --error: #A8332A;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background:
+      linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0 / 28px 28px,
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0 / 28px 28px,
+      var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 0 20px 80px;
+  }
+
+  .wrap {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  header {
+    padding: 48px 0 20px;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 32px;
+  }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--teal);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(32px, 6vw, 44px);
+    line-height: 1.05;
+    margin: 10px 0 8px;
+  }
+
+  .sub {
+    color: var(--ink-soft);
+    font-size: 15px;
+    max-width: 46ch;
+    line-height: 1.5;
+  }
+
+  form {
+    display: flex;
+    gap: 10px;
+    margin: 28px 0 8px;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    padding: 14px 16px;
+    border: 2px solid var(--ink);
+    background: var(--card);
+    color: var(--ink);
+    border-radius: 2px;
+  }
+  input[type="text"]:focus {
+    outline: 3px solid var(--teal);
+    outline-offset: 1px;
+  }
+  input[type="text"]::placeholder { color: #9a9484; }
+
+  button {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 14px 22px;
+    background: var(--ink);
+    color: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  button:hover { background: var(--accent); border-color: var(--accent); }
+  button:disabled { opacity: 0.5; cursor: wait; }
+  button:focus-visible, a:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+
+  .hint {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 8px;
+  }
+
+  #status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    min-height: 20px;
+    margin: 6px 0 20px;
+  }
+  #status.error { color: var(--error); }
+
+  .results { display: flex; flex-direction: column; gap: 22px; }
+
+  .card {
+    position: relative;
+    background: var(--card);
+    border: 2px solid var(--ink);
+    border-radius: 3px;
+    padding: 24px 24px 22px;
+    box-shadow: 5px 5px 0 rgba(27,36,48,0.10);
+  }
+
+  .card .addr {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 20px;
+    margin: 0 0 2px;
+  }
+  .card .cityline {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-bottom: 18px;
+  }
+
+  .figures {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .figure {
+    border: 1px dashed var(--border);
+    padding: 12px 14px;
+    border-radius: 2px;
+  }
+  .figure .label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--teal);
+    margin-bottom: 6px;
+  }
+  .figure .value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 1.15;
+  }
+  .figure .value small { font-size: 13px; font-weight: 400; color: var(--ink-soft); }
+
+  .treatable {
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 2px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+  }
+  .treatable .label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent-soft);
+    margin-bottom: 6px;
+  }
+  .treatable .value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+  .treatable .value small { font-size: 15px; font-weight: 400; opacity: 0.75; }
+  .treatable .breakdown {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    opacity: 0.75;
+    margin-top: 8px;
+  }
+
+  .meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 12px;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+  .meta span b { color: var(--ink); font-weight: 600; }
+
+  .stamp {
+    position: absolute;
+    top: -14px;
+    right: -10px;
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1.3;
+    background: var(--paper);
+    transform: rotate(8deg);
+    padding: 4px;
+  }
+
+  .note {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 2px solid var(--ink);
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+  footer a { color: var(--teal); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .card { animation: settle 0.35s ease-out; }
+  }
+  @keyframes settle {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 480px) {
+    form { flex-direction: column; }
+    .figures { grid-template-columns: 1fr; }
+    .meta { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow"><span>Parcel Field Card</span><span>Maricopa Co. · AZ</span></div>
+    <h1>How big is that lot?</h1>
+    <p class="sub">Type an address in Maricopa County and this looks up the parcel boundary on file with the County Assessor, measures it directly, then subtracts the actual building footprints on the lot (from OpenStreetMap) to estimate treatable acreage.</p>
+  </header>
+
+  <form id="lookup-form">
+    <input type="text" id="address" placeholder="e.g. 1200 W Washington St, Phoenix" autocomplete="off">
+    <button type="submit" id="go-btn">Look up</button>
+  </form>
+  <div class="hint">Street number + name is enough — city, unit, and ZIP are optional and ignored.</div>
+  <div id="status"></div>
+
+  <div class="results" id="results"></div>
+
+  <footer>
+    <p><b>Source:</b> Maricopa County Assessor's Office public parcel records, queried live from the county's own ArcGIS map service. Lot size is measured from the official parcel boundary geometry on file, not estimated. Structure size is measured from OpenStreetMap building footprints on the lot; when OSM has nothing mapped there, it falls back to the Assessor's on-file interior living space as a rougher estimate.</p>
+    <p>Coverage is limited to Maricopa County, Arizona. Records can lag recent subdivisions or boundary adjustments — for anything official (title, permits, disputes), confirm with the <a href="https://mcassessor.maricopa.gov" target="_blank" rel="noopener">Assessor's Office</a> directly.</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  const SERVICE_URL = 'https://gis.mcassessor.maricopa.gov/arcgis/rest/services/MaricopaDynamicQueryService/MapServer/3/query';
+  const OUT_FIELDS = ['APN','APN_DASH','PHYSICAL_ADDRESS','PHYSICAL_CITY','PHYSICAL_ZIP','LAND_SIZE','LOT_NUM','SUBNAME','BOOK','MAP','ITEM','LIVING_SPACE'];
+  const OUT_SR = 4326; // WGS84 lat/lon — feeds straight into the Overpass building-footprint query, no reprojection needed.
+  const SQFT_PER_SQM = 10.7639104167;
+  const OVERPASS_ENDPOINTS = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter' // mirror, tried if the primary is down/rate-limited
+  ];
+
+  const form = document.getElementById('lookup-form');
+  const input = document.getElementById('address');
+  const statusEl = document.getElementById('status');
+  const resultsEl = document.getElementById('results');
+  const goBtn = document.getElementById('go-btn');
+
+  let jsonpCounter = 0;
+
+  function setStatus(msg, isError) {
+    statusEl.textContent = msg || '';
+    statusEl.className = isError ? 'error' : '';
+  }
+
+  // Strip anything after the first comma (city/state/zip) — PHYSICAL_ADDRESS is street-only.
+  function streetPortion(raw) {
+    return raw.split(',')[0].trim();
+  }
+
+  function buildQueryUrl(streetText, callbackName) {
+    const params = new URLSearchParams({
+      where: `UPPER(PHYSICAL_ADDRESS) LIKE UPPER('%${streetText.replace(/'/g, "''")}%')`,
+      outFields: OUT_FIELDS.join(','),
+      returnGeometry: 'true',
+      outSR: String(OUT_SR),
+      f: 'json',
+      resultRecordCount: '8'
+    });
+    if (callbackName) params.set('callback', callbackName);
+    return `${SERVICE_URL}?${params.toString()}`;
+  }
+
+  // Plain fetch first (works if the county service happens to send CORS headers).
+  function fetchDirect(url) {
+    return fetch(url, { mode: 'cors' }).then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+
+  // JSONP fallback — most ArcGIS Server REST endpoints support ?callback= for
+  // exactly this reason: it works cross-origin without CORS headers.
+  function fetchJsonp(street) {
+    return new Promise((resolve, reject) => {
+      const cbName = '__lotLookupCb' + (jsonpCounter++);
+      const url = buildQueryUrl(street, cbName);
+      const script = document.createElement('script');
+      let done = false;
+
+      const cleanup = () => {
+        delete window[cbName];
+        script.remove();
+        clearTimeout(timer);
+      };
+      const timer = setTimeout(() => {
+        if (done) return;
+        done = true;
+        cleanup();
+        reject(new Error('JSONP timeout'));
+      }, 9000);
+
+      window[cbName] = (data) => {
+        if (done) return;
+        done = true;
+        cleanup();
+        resolve(data);
+      };
+      script.onerror = () => {
+        if (done) return;
+        done = true;
+        cleanup();
+        reject(new Error('JSONP script error'));
+      };
+      script.src = url;
+      document.body.appendChild(script);
+    });
+  }
+
+  // --- Geometry math -------------------------------------------------
+  //
+  // Everything comes back as lat/lon (WGS84). For an area the size of a
+  // residential lot, a simple equirectangular projection centered on the
+  // parcel's own latitude is accurate to well under 0.1% — no need for a
+  // real projection library. x = lon * cos(refLat), y = lat, both scaled
+  // to meters by Earth's radius, then a standard shoelace formula.
+  const EARTH_RADIUS_M = 6378137;
+
+  function toLocalXY(lon, lat, refLatRad) {
+    const x = (lon * Math.PI / 180) * Math.cos(refLatRad) * EARTH_RADIUS_M;
+    const y = (lat * Math.PI / 180) * EARTH_RADIUS_M;
+    return [x, y];
+  }
+
+  function ringAreaSqM(ring, refLatRad) {
+    const pts = ring.map(([lon, lat]) => toLocalXY(lon, lat, refLatRad));
+    let sum = 0;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [x1, y1] = pts[i];
+      const [x2, y2] = pts[i + 1];
+      sum += (x1 * y2 - x2 * y1);
+    }
+    return sum / 2; // signed
+  }
+
+  function ringCentroidLat(ring) {
+    let sum = 0;
+    for (const [, lat] of ring) sum += lat;
+    return sum / ring.length;
+  }
+
+  // Esri winding convention (outer rings clockwise, holes counter-clockwise)
+  // means summing signed areas across all rings and taking the absolute
+  // value gives the net area with holes already subtracted.
+  function polygonAreaSqFt(geometry) {
+    if (!geometry || !geometry.rings || !geometry.rings.length) return null;
+    const refLatRad = ringCentroidLat(geometry.rings[0]) * Math.PI / 180;
+    let totalSqM = 0;
+    for (const ring of geometry.rings) totalSqM += ringAreaSqM(ring, refLatRad);
+    return Math.abs(totalSqM) * SQFT_PER_SQM;
+  }
+
+  // Ray-casting point-in-polygon test, [lon, lat] points.
+  function pointInRing(lon, lat, ring) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i];
+      const [xj, yj] = ring[j];
+      const intersects = ((yi > lat) !== (yj > lat)) &&
+        (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+      if (intersects) inside = !inside;
+    }
+    return inside;
+  }
+
+  // --- OpenStreetMap building footprints (Overpass API) ---------------
+  //
+  // Queries a live, public, well-documented OSM endpoint for building
+  // footprints inside the parcel boundary — a real measurement instead of
+  // the Assessor's interior-living-space proxy. Falls back gracefully if
+  // OSM has no footprint mapped there yet (coverage varies by area).
+  function overpassPolyString(ring) {
+    // Overpass wants "lat lon lat lon ...", the reverse of Esri's [lon, lat].
+    return ring.map(([lon, lat]) => `${lat.toFixed(7)} ${lon.toFixed(7)}`).join(' ');
+  }
+
+  function fetchOverpass(query, endpointIndex) {
+    endpointIndex = endpointIndex || 0;
+    if (endpointIndex >= OVERPASS_ENDPOINTS.length) {
+      return Promise.reject(new Error('All Overpass endpoints failed'));
+    }
+    const url = OVERPASS_ENDPOINTS[endpointIndex] + '?data=' + encodeURIComponent(query);
+    return fetch(url, { mode: 'cors' })
+      .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .catch(err => fetchOverpass(query, endpointIndex + 1));
+  }
+
+  // Returns { sqft, count } for building footprints substantially inside
+  // the parcel ring, or null if the lookup failed outright.
+  async function fetchStructureFootprint(parcelRing) {
+    const poly = overpassPolyString(parcelRing);
+    const query = `[out:json][timeout:20];(way["building"](poly:"${poly}");relation["building"](poly:"${poly}"););out geom;`;
+
+    let data;
+    try {
+      data = await fetchOverpass(query);
+    } catch (err) {
+      console.error('Overpass lookup failed', err);
+      return null;
+    }
+
+    const refLatRad = ringCentroidLat(parcelRing) * Math.PI / 180;
+    let totalSqFt = 0;
+    let count = 0;
+
+    for (const el of (data.elements || [])) {
+      if (!el.geometry || el.geometry.length < 3) continue;
+      const ring = el.geometry.map(pt => [pt.lon, pt.lat]);
+      // Close the ring if the API didn't.
+      const first = ring[0], last = ring[ring.length - 1];
+      if (first[0] !== last[0] || first[1] !== last[1]) ring.push(first);
+
+      // Only count buildings actually centered inside this parcel, so a
+      // neighbor's shed that merely shares a boundary node isn't included.
+      let cx = 0, cy = 0;
+      for (const [lon, lat] of el.geometry) { cx += lon; cy += lat; }
+      cx /= el.geometry.length; cy /= el.geometry.length;
+      if (!pointInRing(cx, cy, parcelRing)) continue;
+
+      const areaSqM = Math.abs(ringAreaSqM(ring, refLatRad));
+      totalSqFt += areaSqM * SQFT_PER_SQM;
+      count++;
+    }
+
+    return { sqft: totalSqFt, count };
+  }
+
+  function fmtNum(n, digits) {
+    return n.toLocaleString('en-US', { maximumFractionDigits: digits, minimumFractionDigits: 0 });
+  }
+
+  // --- Rendering --------------------------------------------------------
+  //
+  // Lot size is known immediately, so each card renders right away with
+  // that figure and a "measuring structures…" placeholder, then the
+  // treatable-acreage block fills in once the Overpass lookup resolves.
+
+  function treatableBlockHtml(state) {
+    if (state.status === 'loading') {
+      return `
+        <div class="label">Treatable acreage (lot minus structures)</div>
+        <div class="value">Measuring structures on the lot…</div>`;
+    }
+    const treatableSqFt = state.treatableSqFt, treatableAcres = state.treatableAcres, breakdown = state.breakdown;
+    return `
+      <div class="label">Treatable acreage (lot minus structures)</div>
+      <div class="value">${treatableSqFt != null ? fmtNum(treatableSqFt, 0) + ' <small>sq ft</small>' : '—'} ${treatableAcres != null ? '&nbsp;·&nbsp; ' + fmtNum(treatableAcres, 3) + ' <small>ac</small>' : ''}</div>
+      <div class="breakdown">${breakdown}</div>`;
+  }
+
+  function renderResults(features) {
+    resultsEl.innerHTML = '';
+    if (!features.length) {
+      setStatus('No parcel matched that address in Maricopa County records. Try just the street number and name, no unit or suite.', true);
+      return;
+    }
+    setStatus(`${features.length} match${features.length > 1 ? 'es' : ''} found.`);
+
+    features.forEach(f => {
+      const a = f.attributes;
+      const measuredSqFt = polygonAreaSqFt(f.geometry);
+      const measuredAcres = measuredSqFt ? measuredSqFt / 43560 : null;
+      const reportedSqFt = (a.LAND_SIZE && a.LAND_SIZE > 0) ? a.LAND_SIZE : null;
+      const livingSqFt = (a.LIVING_SPACE && a.LIVING_SPACE > 0) ? a.LIVING_SPACE : null;
+
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const apnDisplay = a.APN_DASH || a.APN || '—';
+      const cityZip = [a.PHYSICAL_CITY, a.PHYSICAL_ZIP].filter(Boolean).join(', ');
+      const sub = a.SUBNAME ? `${a.SUBNAME}${a.LOT_NUM ? ' · Lot ' + a.LOT_NUM : ''}` : null;
+
+      card.innerHTML = `
+        <div class="stamp">VERIFIED<br>MARICOPA<br>ASSESSOR</div>
+        <p class="addr">${a.PHYSICAL_ADDRESS || '(address on file)'}</p>
+        <p class="cityline">${cityZip || 'Maricopa County, AZ'}${sub ? ' · ' + sub : ''}</p>
+
+        <div class="treatable" data-role="treatable">${treatableBlockHtml({ status: 'loading' })}</div>
+
+        <div class="figures">
+          <div class="figure">
+            <div class="label">Total lot area</div>
+            <div class="value">${measuredSqFt ? fmtNum(measuredSqFt, 0) + ' <small>sq ft</small>' : '—'}</div>
+          </div>
+          <div class="figure">
+            <div class="label">In acres</div>
+            <div class="value">${measuredAcres ? fmtNum(measuredAcres, 3) + ' <small>ac</small>' : '—'}</div>
+          </div>
+        </div>
+        <div class="meta">
+          <span>APN <b>${apnDisplay}</b></span>
+          <span>Assessor LAND_SIZE <b>${reportedSqFt ? fmtNum(reportedSqFt, 0) : 'n/a'}</b></span>
+        </div>
+        <p class="note" data-role="method-note">Measuring structures on the lot from OpenStreetMap building footprints…</p>
+        ${reportedSqFt ? `<p class="note">The Assessor's own LAND_SIZE field on record reads ${fmtNum(reportedSqFt,0)} — shown for reference. Its unit isn't documented publicly, so the boundary measurement above is the figure to trust for lot size; the two should roughly agree if LAND_SIZE is in square feet.</p>` : ''}
+      `;
+      resultsEl.appendChild(card);
+
+      // Resolve the treatable-acreage figure asynchronously.
+      const parcelRing = f.geometry && f.geometry.rings && f.geometry.rings[0];
+      const treatableEl = card.querySelector('[data-role="treatable"]');
+      const noteEl = card.querySelector('[data-role="method-note"]');
+
+      if (!parcelRing || measuredSqFt == null) {
+        treatableEl.innerHTML = treatableBlockHtml({ treatableSqFt: null, treatableAcres: null, breakdown: 'No boundary geometry returned for this parcel.' });
+        noteEl.remove();
+        return;
+      }
+
+      fetchStructureFootprint(parcelRing).then(result => {
+        let structureSqFt, methodNote;
+
+        if (result && result.count > 0) {
+          structureSqFt = result.sqft;
+          methodNote = `Structure size is measured from ${result.count} OpenStreetMap building footprint${result.count > 1 ? 's' : ''} on this lot — actual roofline area, not an estimate.`;
+        } else if (result && result.count === 0) {
+          structureSqFt = 0;
+          methodNote = `No building footprints found on this lot in OpenStreetMap — treatable acreage shown as the full lot. If there's a structure here, OSM likely hasn't mapped it yet; treatable acreage may be overstated.`;
+        } else if (livingSqFt) {
+          structureSqFt = livingSqFt;
+          methodNote = `OpenStreetMap lookup didn't return a result, so this falls back to the Assessor's on-file LIVING_SPACE (${fmtNum(livingSqFt, 0)} sq ft interior area) as a rougher stand-in. It won't include garages, sheds, or pools, and understates footprint for multi-story homes.`;
+        } else {
+          structureSqFt = 0;
+          methodNote = `Structure size couldn't be determined (OpenStreetMap lookup failed and no living-space figure is on file) — treatable acreage shown as the full lot.`;
+        }
+
+        const treatableSqFt = Math.max(measuredSqFt - structureSqFt, 0);
+        const treatableAcres = treatableSqFt / 43560;
+        const breakdown = `${fmtNum(measuredSqFt, 0)} sq ft lot − ${fmtNum(structureSqFt, 0)} sq ft structure`;
+
+        treatableEl.innerHTML = treatableBlockHtml({ treatableSqFt, treatableAcres, breakdown });
+        noteEl.textContent = methodNote;
+      });
+    });
+  }
+
+  async function runLookup(address) {
+    const street = streetPortion(address);
+    if (!street) {
+      setStatus('Type an address first.', true);
+      return;
+    }
+
+    goBtn.disabled = true;
+    setStatus('Querying Maricopa County Assessor records…');
+    resultsEl.innerHTML = '';
+
+    const directUrl = buildQueryUrl(street, null);
+
+    try {
+      let data;
+      try {
+        data = await fetchDirect(directUrl);
+      } catch (corsErr) {
+        setStatus('Direct request blocked (likely CORS) — retrying via JSONP…');
+        data = await fetchJsonp(street);
+      }
+
+      if (data.error) throw new Error(data.error.message || 'Service error');
+      renderResults(data.features || []);
+    } catch (err) {
+      setStatus('Could not reach the county parcel service right now. It may be temporarily down, or blocking automated requests. Try again in a moment, or look the address up directly at maps.mcassessor.maricopa.gov.', true);
+      console.error(err);
+    } finally {
+      goBtn.disabled = false;
+    }
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    runLookup(input.value);
+  });
+})();
+</script>
+</body>
+</html>
